@@ -10,12 +10,11 @@ namespace GitPuller
 
         static void Main(string[] args)
         {
-            IConfiguration configuration = new ConfigurationBuilder()
-                .SetBasePath(Directory.GetCurrentDirectory())
-                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-                .Build();
+            var config = new ConfigurationBuilder()
+                   .SetBasePath(@"C:\Users\XYZ\source\repos\GitPuller\GitPuller")
+                   .AddJsonFile("appsettings.json").Build();
 
-            accessToken = configuration.GetSection("Git")["AccessToken"];
+            accessToken = config.GetSection("Git")["AccessToken"];
 
             if (string.IsNullOrEmpty(accessToken))
             {
@@ -25,15 +24,33 @@ namespace GitPuller
 
             var exec = new CommandExecuter();
 
-            // Example usage of the provided access token
-            var gitCloneCommand = $"git clone https://{accessToken}@github.com/your/repository.git";
-            var result = exec.Execute(gitCloneCommand);
+            Console.WriteLine("Stashing changes. Please wait...");
+            var gitStashCommand = "git stash";
+            var stashResult = exec.Execute(gitStashCommand);
 
-            Console.WriteLine(result);
+            Console.WriteLine(stashResult);
+            Console.WriteLine("Git stash operation completed.");
 
-            // Now you can use 'accessToken' for other Git commands
+
+            Console.WriteLine("Cloning the repository. Please wait...");
+            var gitCloneCommand = $"git clone https://{accessToken}@github.com/serkankahveci/GitPuller.git";
+            var cloneResult = exec.Execute(gitCloneCommand);
+
+            Console.WriteLine(cloneResult);
+
+            Console.WriteLine("Git clone operation completed.");
+
+
+            Console.WriteLine("Pulling the latest changes from the repository. Please wait...");
+            var gitPullCommand = "git pull origin master";
+            var pullResult = exec.Execute(gitPullCommand);
+
+            Console.WriteLine(pullResult);
+            Console.WriteLine("Git pull operation completed.");
+
 
             Console.ReadLine();
+
         }
     }
 }
