@@ -24,33 +24,41 @@ namespace GitPuller
 
             var exec = new CommandExecuter();
 
-            Console.WriteLine("Stashing changes. Please wait...");
-            var gitStashCommand = "git stash";
+            Console.WriteLine("Stashing ...");
+            var gitStashCommand = "git stash save -S 'New Save'";
             var stashResult = exec.Execute(gitStashCommand);
-
             Console.WriteLine(stashResult);
-            Console.WriteLine("Git stash operation completed.");
 
+            Console.WriteLine("TEST");
+            var test = "git sdasdas";
+            var testResult = exec.Execute(test);
+            Console.WriteLine(testResult);
+            Console.WriteLine("TEST");
 
-            Console.WriteLine("Cloning the repository. Please wait...");
+            Console.WriteLine("Cloning ...");
             var gitCloneCommand = $"git clone https://{accessToken}@github.com/serkankahveci/GitPuller.git";
             var cloneResult = exec.Execute(gitCloneCommand);
-
             Console.WriteLine(cloneResult);
 
-            Console.WriteLine("Git clone operation completed.");
+            Console.WriteLine("Git clone completed.");
 
-
-            Console.WriteLine("Pulling the latest changes from the repository. Please wait...");
+            Console.WriteLine("Pulling ...");
             var gitPullCommand = "git pull origin master";
             var pullResult = exec.Execute(gitPullCommand);
-
             Console.WriteLine(pullResult);
-            Console.WriteLine("Git pull operation completed.");
 
+            Console.WriteLine("Popping ...");
+            var gitStashPop = "git stash pop stash@{0}";
+            var popResult = exec.Execute(gitStashPop);
+            Console.WriteLine(popResult);
+
+            Console.WriteLine("...");
+            var popList = "git stash list";
+            var popListResult = exec.Execute(popList);
+            Console.WriteLine(popListResult);
 
             Console.ReadLine();
-
+            //maNga nasıl birinci olamadı yaw
         }
     }
 }

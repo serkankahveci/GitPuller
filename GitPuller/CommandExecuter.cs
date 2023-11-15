@@ -14,7 +14,7 @@ namespace GitPuller
             var processStartInfo = new ProcessStartInfo("powershell.exe", command);
 
             processStartInfo.RedirectStandardOutput = true;
-            processStartInfo.RedirectStandardError = true;
+            processStartInfo.RedirectStandardError = false;
             processStartInfo.UseShellExecute = false;
 
             var process = new Process();
