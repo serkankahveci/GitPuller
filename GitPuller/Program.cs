@@ -1,6 +1,7 @@
 ﻿using System;
 using Microsoft.Extensions.Configuration;
 using System.IO;
+using System.Linq;
 
 namespace GitPuller
 {
@@ -12,7 +13,8 @@ namespace GitPuller
         {
             var config = new ConfigurationBuilder()
                    .SetBasePath(@"C:\Users\XYZ\source\repos\GitPuller\GitPuller")
-                   .AddJsonFile("appsettings.json").Build();
+                   .AddJsonFile("appsettings.json")
+                   .Build();
 
             accessToken = config.GetSection("Git")["AccessToken"];
 
@@ -24,41 +26,63 @@ namespace GitPuller
 
             var exec = new CommandExecuter();
 
-            Console.WriteLine("Stashing ...");
-            var gitStashCommand = "git stash save -S 'New Save'";
-            var stashResult = exec.Execute(gitStashCommand);
-            Console.WriteLine(stashResult);
+            Console.WriteLine("-------");
+            var repoCommand = $"curl \"https://github.com/serkankahveci?tab=repositories/?type=all\"";
+            var repoResult = exec.Execute(repoCommand);
 
-            Console.WriteLine("TEST");
-            var test = "git sdasdas";
-            var testResult = exec.Execute(test);
-            Console.WriteLine(testResult);
-            Console.WriteLine("TEST");
+            Console.WriteLine(repoResult);
 
-            Console.WriteLine("Cloning ...");
-            var gitCloneCommand = $"git clone https://{accessToken}@github.com/serkankahveci/GitPuller.git";
-            var cloneResult = exec.Execute(gitCloneCommand);
-            Console.WriteLine(cloneResult);
+            Console.WriteLine("-------");
 
-            Console.WriteLine("Git clone completed.");
+            foreach (var item in repoResult)
+            {
+                var takeBranchList = "git branch -a";
+                var branchListResult = exec.Execute(takeBranchList);
+                Console.WriteLine(branchListResult);
 
-            Console.WriteLine("Pulling ...");
-            var gitPullCommand = "git pull origin master";
-            var pullResult = exec.Execute(gitPullCommand);
-            Console.WriteLine(pullResult);
 
-            Console.WriteLine("Popping ...");
-            var gitStashPop = "git stash pop stash@{0}";
-            var popResult = exec.Execute(gitStashPop);
-            Console.WriteLine(popResult);
 
-            Console.WriteLine("...");
-            var popList = "git stash list";
-            var popListResult = exec.Execute(popList);
-            Console.WriteLine(popListResult);
+                var branchNames = branchListResult
+                    .Split('\n', (char)StringSplitOptions.RemoveEmptyEntries)
+                    .Select(branch => branch.Trim('*').Trim())
+                    .ToList();
 
-            Console.ReadLine();
-            //maNga nasıl birinci olamadı yaw
+
+
+                foreach (var branchName in branchNames)
+                {
+                    Console.WriteLine($"{branchName}");
+                    //Console.WriteLine("Stashing ...");
+                    //var gitStashCommand = "git stash save -S 'New Save'";
+                    //var stashResult = exec.Execute(gitStashCommand);
+                    //Console.WriteLine(stashResult);
+
+                    //Console.WriteLine("TEST");
+                    //var test = "git sdasdas";
+                    //var testResult = exec.Execute(test);
+                    //Console.WriteLine(testResult);
+                    //Console.WriteLine("TEST");
+
+                    //Console.WriteLine("Cloning ...");
+                    //var gitCloneCommand = $"git clone https://{accessToken}@github.com/serkankahveci/GitPuller.git";
+                    //var cloneResult = exec.Execute(gitCloneCommand);
+                    //Console.WriteLine(cloneResult);
+
+                    //Console.WriteLine("Git clone completed.");
+
+                    //Console.WriteLine("Pulling ...");
+                    //var gitPullCommand = "git pull origin master";
+                    //var pullResult = exec.Execute(gitPullCommand);
+                    //Console.WriteLine(pullResult);
+
+                    //Console.WriteLine("Popping ...");
+                    //var gitStashPop = "git stash pop stash@{0}";
+                    //var popResult = exec.Execute(gitStashPop);
+                    //Console.WriteLine(popResult);
+                }
+                Console.ReadLine();
+                //maNga nasıl birinci olamadı yaw
+            }
         }
     }
 }
