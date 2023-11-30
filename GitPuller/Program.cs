@@ -11,49 +11,16 @@ namespace GitPuller
 
         static void Main(string[] args)
         {
-            var config = new ConfigurationBuilder()
-                .SetBasePath(@"C:\Users\XYZ\source\repos\GitPuller\GitPuller")
-                .AddJsonFile("appsettings.json")
-                .Build();
-
-            accessToken = config.GetSection("Git")["AccessToken"];
-
-            if (string.IsNullOrEmpty(accessToken))
-            {
-                Console.Write("Enter Git Access Token: ");
-                accessToken = Console.ReadLine();
-            }
+            var configurationManager = new ConfigurationManager();
+            string accessToken = configurationManager.GetAccessToken();
 
             var exec = new CommandExecuter();
 
-            var github = new GitHubClient(new ProductHeaderValue("GitPuller"));
-            github.Credentials = new Credentials(accessToken);
+            var githubOps = new GithubOperation(accessToken);
 
-            var repositories = github.Repository.GetAllForCurrent().Result;
+            githubOps.GetGithubAllRepositoryAndBranchs();
 
-            foreach (var repository in repositories)
-            {
-                Console.WriteLine("Repository Name: " + repository.Name);
-                Console.WriteLine("-------");
-
-                var branches = github.Repository.Branch.GetAll(repository.Id).Result;
-
-                foreach (var branch in branches)
-                {
-                    Console.WriteLine($"{branch.Name}");
-
-                    Console.WriteLine("TEST");
-                    var test = "git sdasdas";
-                    var testResult = exec.Execute(test);
-                    Console.WriteLine(testResult);
-                    Console.WriteLine("TEST");
-
-                    Thread.Sleep(4000);
-                }
-
-                Console.WriteLine("-------");
-            }
-                Console.ReadLine();
+            Console.ReadLine();
         }
     }
 }
