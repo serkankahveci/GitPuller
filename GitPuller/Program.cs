@@ -14,11 +14,12 @@ namespace GitPuller
             var configurationManager = new ConfigurationManager();
             string accessToken = configurationManager.GetAccessToken();
 
-            var exec = new CommandExecuter();
+            //var exec = new CommandExecuter();
 
             var githubOps = new GithubOperation(accessToken);
 
             githubOps.GetGithubAllRepositoryAndBranchs();
+            githubOps.ExecuteGitCommands();
 
             Console.ReadLine();
         }
