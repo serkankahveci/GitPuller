@@ -19,7 +19,7 @@ namespace GitPuller
             var githubOps = new GithubOperation(accessToken);
 
             githubOps.GetGithubAllRepositoryAndBranchs();
-            githubOps.ExecuteGitCommands();
+            //githubOps.ExecuteGitCommands();
 
             Console.ReadLine();
         }

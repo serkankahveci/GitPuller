@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Security.AccessControl;
 using System.Text;
@@ -36,7 +37,8 @@ namespace GitPuller
                 {
                     Console.WriteLine(branch.Name);
                     Console.WriteLine("\n");
-                    branchName = branch.Name;                    
+                    branchName = branch.Name;
+                    ExecuteGitCommands();
                 }
                 Console.WriteLine("--------");
             }
@@ -49,41 +51,43 @@ namespace GitPuller
 
         public void ExecuteGitCommands()
         {
+            if (!CheckRepo(repoName))
+            {
+                Console.WriteLine("Local repository not found. Skipping ExecuteGitCommands.");
+                return;
+            }
+
             var exec = new CommandExecuter();
 
-            //// Stash
-            //Console.WriteLine("Stashing ...");
-            //var gitStashCommand = "git stash save -S 'New Save'";
-            //var stashResult = exec.Execute(gitStashCommand);
-            //Console.WriteLine(stashResult);
-
-            //// Clone
-            //Console.WriteLine("Cloning ...");
-            //var gitCloneCommand = $"git clone https://{accessToken}@github.com/serkankahveci/GitPuller.git";
-            //var cloneResult = exec.Execute(gitCloneCommand);
-            //Console.WriteLine(cloneResult);
+            // Clone
+            Console.WriteLine($"Cloning {repoName}...");
+            var gitCloneCommand = $"git clone https://github.com/{repoName}.git";
+            var cloneResult = exec.Execute(gitCloneCommand);
+            Console.WriteLine(cloneResult);
 
             //// Pull
-            //Console.WriteLine("Pulling ...");
-            //var gitPullCommand = "git pull origin master";
+            //Console.WriteLine($"Pulling {branchName} from {repoName}...");
+            //var gitPullCommand = $"git pull origin {branchName}";
             //var pullResult = exec.Execute(gitPullCommand);
             //Console.WriteLine(pullResult);
 
-            //// Pop
-            //Console.WriteLine("Popping ...");
-            //var gitStashPop = "git stash pop stash@{0}";
-            //var popResult = exec.Execute(gitStashPop);
-            //Console.WriteLine(popResult);
+            // You can add more Git commands as needed based on your requirements.
 
             Console.WriteLine("TEST");
-            var test = "git pull";
+            var test = $"git status";
             var testResult = exec.Execute(test);
-
             Console.WriteLine(testResult);
+
             Console.WriteLine(branchName);
             Console.WriteLine(repoName);
             Console.WriteLine("TEST");
         }
 
+        public static bool CheckRepo(string repoName) 
+        {
+            var localRepoPath = $"~\\{repoName}";
+
+            return Directory.Exists(localRepoPath);
+        }
     }
 }
