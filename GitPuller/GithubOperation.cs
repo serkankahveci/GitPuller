@@ -1,93 +1,111 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Security.AccessControl;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 using Octokit;
 
 namespace GitPuller
 {
-
     public class GithubOperation
     {
-        private GitHubClient github;
-        private string branchName;
-        private string repoName;
+        private readonly GitHubClient _github;
+        private string _branchName;
+        private string _repoName;
+        private readonly ConfigurationManager _configManager;
+        private readonly string _accessToken;
 
         public GithubOperation(string accessToken)
         {
-            github = new GitHubClient(new ProductHeaderValue("GitPuller"));
-            github.Credentials = new Credentials(accessToken);
+            _configManager = new ConfigurationManager();
+            _accessToken = _configManager.GetAccessToken();
+
+            _github = new GitHubClient(new ProductHeaderValue("GitPuller"));
+            _github.Credentials = new Credentials(accessToken);
         }
 
-        public void GetGithubAllRepositoryAndBranchs()
+        public async Task GetGithubAllRepositoryAndBranches()
         {
-            var repositories = github.Repository.GetAllForCurrent().Result;
-
-            foreach (var repository in repositories)
+            try
             {
-                Console.Write(repository.Name);
-                Console.WriteLine("\n");
-                repoName = repository.Name;
-                var branchList = GetAllBranchsFromCurrentRepository(repository);
-                foreach (var branch in branchList)
+                var repositories = await _github.Repository.GetAllForCurrent();
+
+                foreach (var repository in repositories)
                 {
-                    Console.WriteLine(branch.Name);
-                    Console.WriteLine("\n");
-                    branchName = branch.Name;
-                    ExecuteGitCommands();
+                    Console.WriteLine(repository.Name);
+                    _repoName = repository.Name;
+
+                    var branchList = await GetAllBranchesFromCurrentRepository(repository);
+                    foreach (var branch in branchList)
+                    {
+                        Console.WriteLine(branch.Name);
+                        _branchName = branch.Name;
+                        await ExecuteGitCommands();
+                    }
+                    Console.WriteLine("--------");
                 }
-                Console.WriteLine("--------");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error: {ex.Message}");
             }
         }
 
-        public IReadOnlyList<Branch> GetAllBranchsFromCurrentRepository(Repository repository)
+        public async Task<IReadOnlyList<Branch>> GetAllBranchesFromCurrentRepository(Repository repository)
         {
-            return github.Repository.Branch.GetAll(repository.Id).Result;
+            return await _github.Repository.Branch.GetAll(repository.Id);
         }
 
-        public void ExecuteGitCommands()
+        public Task ExecuteGitCommands()
         {
-            if (!CheckRepo(repoName))
+            var repositoryPaths = _configManager.GetRepositoryPaths();
+
+            if (!CheckRepo(repositoryPaths, _repoName))
             {
                 Console.WriteLine("Local repository not found. Skipping ExecuteGitCommands.");
-                return;
+                return Task.CompletedTask;
             }
 
             var exec = new CommandExecuter();
 
-            // Clone
-            Console.WriteLine($"Cloning {repoName}...");
-            var gitCloneCommand = $"git clone https://github.com/{repoName}.git";
+            Console.WriteLine($"Cloning {_repoName}...");
+            var gitCloneCommand = $"git clone https://github.com/{_repoName}.git";
             var cloneResult = exec.Execute(gitCloneCommand);
             Console.WriteLine(cloneResult);
 
-            //// Pull
-            //Console.WriteLine($"Pulling {branchName} from {repoName}...");
-            //var gitPullCommand = $"git pull origin {branchName}";
-            //var pullResult = exec.Execute(gitPullCommand);
-            //Console.WriteLine(pullResult);
+            Console.WriteLine("Pulling...");
+            var gitPullCommand = $"git pull origin {_branchName}";
+            var pullResult = exec.Execute(gitPullCommand);
+            Console.WriteLine(pullResult);
 
-            // You can add more Git commands as needed based on your requirements.
-
-            Console.WriteLine("TEST");
-            var test = $"git status";
-            var testResult = exec.Execute(test);
+            Console.WriteLine("Testing...");
+            var testCommand = "git status";
+            var testResult = exec.Execute(testCommand);
             Console.WriteLine(testResult);
 
-            Console.WriteLine(branchName);
-            Console.WriteLine(repoName);
+            Console.WriteLine($"Branch: {_branchName}");
+            Console.WriteLine($"Repository: {_repoName}");
             Console.WriteLine("TEST");
+            return Task.CompletedTask;
         }
 
-        public static bool CheckRepo(string repoName) 
+        public bool CheckRepo(List<string> repositoryPaths, string repoName)
         {
-            var localRepoPath = $"~\\{repoName}";
+            if (repositoryPaths != null && repositoryPaths.Count > 0)
+            {
+                foreach (var path in repositoryPaths)
+                {
+                    var directoryName = new DirectoryInfo(path).Name;
 
-            return Directory.Exists(localRepoPath);
+                    if (repoName.Contains(directoryName))
+                    {
+                        ExecuteGitCommands();
+                        return true; // ExecuteGitCommands called once; exit the loop
+                    }
+                }
+            }
+            return false; // Repository not found in any specified path
         }
+
     }
 }

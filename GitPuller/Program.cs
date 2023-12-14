@@ -2,6 +2,7 @@
 using System.Threading;
 using Microsoft.Extensions.Configuration;
 using Octokit;
+using System.Threading.Tasks;
 
 namespace GitPuller
 {
@@ -9,17 +10,14 @@ namespace GitPuller
     {
         static string accessToken;
 
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             var configurationManager = new ConfigurationManager();
             string accessToken = configurationManager.GetAccessToken();
 
-            //var exec = new CommandExecuter();
-
             var githubOps = new GithubOperation(accessToken);
 
-            githubOps.GetGithubAllRepositoryAndBranchs();
-            //githubOps.ExecuteGitCommands();
+            await githubOps.GetGithubAllRepositoryAndBranches();
 
             Console.ReadLine();
         }

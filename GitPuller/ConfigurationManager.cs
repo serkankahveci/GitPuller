@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Microsoft.Extensions.Configuration;
 
 namespace GitPuller
@@ -10,7 +12,7 @@ namespace GitPuller
 
         public ConfigurationManager()
         {
-            var basePath = AppDomain.CurrentDomain.BaseDirectory; 
+            var basePath = AppDomain.CurrentDomain.BaseDirectory;
             var projectPath = basePath.Substring(0, basePath.IndexOf("bin", StringComparison.Ordinal));
 
             _config = new ConfigurationBuilder()
@@ -30,6 +32,19 @@ namespace GitPuller
             }
 
             return accessToken;
+        }
+
+        public List<string> GetRepositoryPaths()
+        {
+            var repositoryPaths
+                = _config
+                .GetSection("RepositoryPaths")
+                .AsEnumerable()
+                .Select(x => x.Value)
+                .Where(n => n != null)
+                .ToList();
+
+            return repositoryPaths;
         }
     }
 }

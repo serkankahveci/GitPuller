@@ -10,7 +10,7 @@ namespace GitPuller
     public class CommandExecuter
     {
         public string Execute(string command)
-        {           
+        {
             var processStartInfo = new ProcessStartInfo("powershell.exe", command);
 
             processStartInfo.RedirectStandardOutput = true;

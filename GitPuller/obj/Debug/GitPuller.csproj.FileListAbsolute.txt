@@ -42,3 +42,5 @@ C:\Users\XYZ\source\repos\GitPuller\GitPuller\bin\Debug\System.ValueTuple.xml
 C:\Users\XYZ\source\repos\GitPuller\GitPuller\obj\Debug\GitPuller.csproj.CopyComplete
 C:\Users\XYZ\source\repos\GitPuller\GitPuller\bin\Debug\Octokit.dll
 C:\Users\XYZ\source\repos\GitPuller\GitPuller\bin\Debug\Octokit.xml
+C:\Users\XYZ\source\repos\GitPuller\GitPuller\bin\Debug\Microsoft.Extensions.Configuration.Binder.dll
+C:\Users\XYZ\source\repos\GitPuller\GitPuller\bin\Debug\Microsoft.Extensions.Configuration.Binder.xml
