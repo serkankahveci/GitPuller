@@ -14,6 +14,7 @@ namespace GitPuller
         private string _repoName;
         private readonly ConfigurationManager _configManager;
         private readonly string _accessToken;
+        private string _path;
 
         public GithubOperation(string accessToken)
         {
@@ -43,7 +44,7 @@ namespace GitPuller
 
                         if (CheckRepo(_configManager.GetRepositoryPaths(), _repoName))
                         {
-                            await ExecuteGitCommands();
+                            await ExecuteGitCommands(_path);
                         }
                         else
                         {
@@ -64,30 +65,25 @@ namespace GitPuller
             return await _github.Repository.Branch.GetAll(repository.Id);
         }
 
-        public async Task ExecuteGitCommands()
+        public async Task ExecuteGitCommands(string path)
         {
             var repositoryPaths = _configManager.GetRepositoryPaths();
 
             var exec = new CommandExecuter();
 
-            Console.WriteLine($"Cloning {_repoName}...");
-            var gitCloneCommand = $"git clone https://github.com/{_repoName}.git";
-            var cloneResult = exec.Execute(gitCloneCommand);
-            Console.WriteLine(cloneResult);
+            var changeDirectory = $"cd {path}";
+            exec.Execute(changeDirectory, path);
 
-            Console.WriteLine("Pulling...");
             var gitPullCommand = $"git pull origin {_branchName}";
-            var pullResult = exec.Execute(gitPullCommand);
+            var pullResult = exec.Execute(gitPullCommand, path);
             Console.WriteLine(pullResult);
 
-            Console.WriteLine("Testing...");
-            var testCommand = "git status";
-            var testResult = exec.Execute(testCommand);
-            Console.WriteLine(testResult);
+            //var gitStatusCommand = "git status";
+            //var statusResult = exec.Execute(gitStatusCommand, path);
+            //Console.WriteLine(statusResult);
 
             Console.WriteLine($"Branch: {_branchName}");
             Console.WriteLine($"Repository: {_repoName}");
-            Console.WriteLine("TEST");
         }
 
         public bool CheckRepo(List<string> repositoryPaths, string repoName)
@@ -98,13 +94,14 @@ namespace GitPuller
                 {
                     var directoryName = new DirectoryInfo(path).Name;
 
-                    if (repoName.Contains(directoryName))
+                    if (directoryName.Equals(repoName, StringComparison.OrdinalIgnoreCase) || directoryName.Equals($"{repoName}-{_branchName}", StringComparison.OrdinalIgnoreCase))
                     {
-                        return true; // Repository found in specified path
+                        _path = path;
+                        return true;
                     }
                 }
             }
-            return false; // Repository not found in any specified path
+            return false;
         }
     }
 }
