@@ -8,18 +8,24 @@ namespace GitPuller
 {
     internal class Program
     {
-        static string accessToken;
-
         static async Task Main(string[] args)
         {
-            var configurationManager = new ConfigurationManager();
-            string accessToken = configurationManager.GetAccessToken();
+            try
+            {
+                var configurationManager = new ConfigurationManager();
+                string accessToken = configurationManager.GetAccessToken();
 
-            var githubOps = new GithubOperation(accessToken);
+                var githubOps = new GithubOperation(accessToken);
 
-            await githubOps.GetGithubAllRepositoryAndBranches();
+                await githubOps.GetGithubAllRepositoryAndBranches();
 
-            Console.ReadLine();
+                Console.WriteLine("Press any key to exit...");
+                Console.ReadKey();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred: {ex.Message}");
+            }
         }
     }
 }

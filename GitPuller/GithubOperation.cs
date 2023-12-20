@@ -18,7 +18,7 @@ namespace GitPuller
         public GithubOperation(string accessToken)
         {
             _configManager = new ConfigurationManager();
-            _accessToken = _configManager.GetAccessToken();
+            _accessToken = accessToken;
 
             _github = new GitHubClient(new ProductHeaderValue("GitPuller"));
             _github.Credentials = new Credentials(accessToken);
@@ -40,7 +40,15 @@ namespace GitPuller
                     {
                         Console.WriteLine(branch.Name);
                         _branchName = branch.Name;
-                        await ExecuteGitCommands();
+
+                        if (CheckRepo(_configManager.GetRepositoryPaths(), _repoName))
+                        {
+                            await ExecuteGitCommands();
+                        }
+                        else
+                        {
+                            Console.WriteLine("Local repository not found. Skipping ExecuteGitCommands.");
+                        }
                     }
                     Console.WriteLine("--------");
                 }
@@ -56,15 +64,9 @@ namespace GitPuller
             return await _github.Repository.Branch.GetAll(repository.Id);
         }
 
-        public Task ExecuteGitCommands()
+        public async Task ExecuteGitCommands()
         {
             var repositoryPaths = _configManager.GetRepositoryPaths();
-
-            if (!CheckRepo(repositoryPaths, _repoName))
-            {
-                Console.WriteLine("Local repository not found. Skipping ExecuteGitCommands.");
-                return Task.CompletedTask;
-            }
 
             var exec = new CommandExecuter();
 
@@ -86,7 +88,6 @@ namespace GitPuller
             Console.WriteLine($"Branch: {_branchName}");
             Console.WriteLine($"Repository: {_repoName}");
             Console.WriteLine("TEST");
-            return Task.CompletedTask;
         }
 
         public bool CheckRepo(List<string> repositoryPaths, string repoName)
@@ -99,13 +100,11 @@ namespace GitPuller
 
                     if (repoName.Contains(directoryName))
                     {
-                        ExecuteGitCommands();
-                        return true; // ExecuteGitCommands called once; exit the loop
+                        return true; // Repository found in specified path
                     }
                 }
             }
             return false; // Repository not found in any specified path
         }
-
     }
 }
