@@ -57,6 +57,7 @@ namespace GitPuller
             catch (Exception ex)
             {
                 Console.WriteLine($"Error: {ex.Message}");
+                // Handle exceptions here
             }
         }
 
@@ -67,23 +68,31 @@ namespace GitPuller
 
         public async Task ExecuteGitCommands(string path)
         {
-            var repositoryPaths = _configManager.GetRepositoryPaths();
+            try
+            {
+                var repositoryPaths = _configManager.GetRepositoryPaths();
 
-            var exec = new CommandExecuter();
+                var exec = new CommandExecuter();
 
-            var changeDirectory = $"cd {path}";
-            exec.Execute(changeDirectory, path);
+                var changeDirectory = $"cd {path}";
+                exec.Execute(changeDirectory, path);
 
-            var gitPullCommand = $"git pull origin {_branchName}";
-            var pullResult = exec.Execute(gitPullCommand, path);
-            Console.WriteLine(pullResult);
+                var gitPullCommand = $"git pull origin {_branchName}";
+                var pullResult = exec.Execute(gitPullCommand, path);
+                Console.WriteLine(pullResult);
 
-            //var gitStatusCommand = "git status";
-            //var statusResult = exec.Execute(gitStatusCommand, path);
-            //Console.WriteLine(statusResult);
+                //var gitStatusCommand = "git status";
+                //var statusResult = exec.Execute(gitStatusCommand, path);
+                //Console.WriteLine(statusResult);
 
-            Console.WriteLine($"Branch: {_branchName}");
-            Console.WriteLine($"Repository: {_repoName}");
+                Console.WriteLine($"Branch: {_branchName}");
+                Console.WriteLine($"Repository: {_repoName}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error executing Git commands: {ex.Message}");
+                // Handle exceptions during Git commands execution
+            }
         }
 
         public bool CheckRepo(List<string> repositoryPaths, string repoName)

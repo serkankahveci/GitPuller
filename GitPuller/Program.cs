@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Threading;
-using Microsoft.Extensions.Configuration;
-using Octokit;
 using System.Threading.Tasks;
 
 namespace GitPuller

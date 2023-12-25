@@ -23,28 +23,43 @@ namespace GitPuller
 
         public string GetAccessToken()
         {
-            string accessToken = _config.GetSection("Git")["AccessToken"];
-
-            if (string.IsNullOrEmpty(accessToken))
+            try
             {
-                Console.Write("Enter Git Access Token: ");
-                accessToken = Console.ReadLine();
-            }
+                string accessToken = _config.GetSection("Git")["AccessToken"];
 
-            return accessToken;
+                if (string.IsNullOrEmpty(accessToken))
+                {
+                    Console.Write("Enter Git Access Token: ");
+                    accessToken = Console.ReadLine();
+                }
+
+                return accessToken;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error reading access token: {ex.Message}");
+                return null; // veya uygun bir hata durumu işaretleyebilirsiniz
+            }
         }
 
         public List<string> GetRepositoryPaths()
         {
-            var repositoryPaths
-                = _config
-                .GetSection("RepositoryPaths")
-                .AsEnumerable()
-                .Select(x => x.Value)
-                .Where(n => n != null)
-                .ToList();
+            try
+            {
+                var repositoryPaths = _config
+                    .GetSection("RepositoryPaths")
+                    .AsEnumerable()
+                    .Select(x => x.Value)
+                    .Where(n => n != null)
+                    .ToList();
 
-            return repositoryPaths;
+                return repositoryPaths;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error reading repository paths: {ex.Message}");
+                return new List<string>(); // veya uygun bir hata durumu işaretleyebilirsiniz
+            }
         }
     }
 }
