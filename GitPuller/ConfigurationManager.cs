@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Microsoft.Extensions.Configuration;
+using System.Text.Json;
 
 namespace GitPuller
 {
@@ -31,6 +32,10 @@ namespace GitPuller
                 {
                     Console.Write("Enter Git Access Token: ");
                     accessToken = Console.ReadLine();
+
+                    var jsonString = JsonSerializer.Serialize(new { AccessToken = accessToken });
+                    File.WriteAllText("credentials.json", jsonString);
+
                 }
 
                 return accessToken;
@@ -38,7 +43,7 @@ namespace GitPuller
             catch (Exception ex)
             {
                 Console.WriteLine($"Error reading access token: {ex.Message}");
-                return null; // veya uygun bir hata durumu işaretleyebilirsiniz
+                return null;
             }
         }
 
@@ -58,7 +63,7 @@ namespace GitPuller
             catch (Exception ex)
             {
                 Console.WriteLine($"Error reading repository paths: {ex.Message}");
-                return new List<string>(); // veya uygun bir hata durumu işaretleyebilirsiniz
+                return new List<string>();
             }
         }
     }

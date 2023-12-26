@@ -57,7 +57,6 @@ namespace GitPuller
             catch (Exception ex)
             {
                 Console.WriteLine($"Error: {ex.Message}");
-                // Handle exceptions here
             }
         }
 
@@ -77,9 +76,26 @@ namespace GitPuller
                 var changeDirectory = $"cd {path}";
                 exec.Execute(changeDirectory, path);
 
+                var gitStatusCommand = "git status --porcelain";
+                var statusResult = exec.Execute(gitStatusCommand, path);
+
+                if (!string.IsNullOrWhiteSpace(statusResult))
+                {
+                    var gitStashSave = "git stash save -S 'New Save'";
+                    var stashSaveResult = exec.Execute(gitStashSave, path);
+                    Console.WriteLine(stashSaveResult);
+                }
+
                 var gitPullCommand = $"git pull origin {_branchName}";
                 var pullResult = exec.Execute(gitPullCommand, path);
                 Console.WriteLine(pullResult);
+
+                if (!string.IsNullOrWhiteSpace(statusResult))
+                {
+                    var gitStashPop = "git stash pop stash@{0}";
+                    var stashPopResult = exec.Execute(gitStashPop, path);
+                    Console.WriteLine(stashPopResult);
+                }
 
                 //var gitStatusCommand = "git status";
                 //var statusResult = exec.Execute(gitStatusCommand, path);
@@ -91,7 +107,6 @@ namespace GitPuller
             catch (Exception ex)
             {
                 Console.WriteLine($"Error executing Git commands: {ex.Message}");
-                // Handle exceptions during Git commands execution
             }
         }
 
