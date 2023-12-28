@@ -9,12 +9,16 @@ namespace GitPuller
         {
             try
             {
-                var configurationManager = new ConfigurationManager();
-                string accessToken = configurationManager.GetAccessToken();
+                var form1 = new Form1();
 
-                var githubOps = new GithubOperation(accessToken);
+                form1.ShowDialog();
 
-                await githubOps.GetGithubAllRepositoryAndBranches();
+                //var configurationManager = new ConfigurationManager();
+                //string accessToken = configurationManager.GetAccessToken();
+
+                //var githubOps = new GithubOperation(accessToken);
+
+                //await githubOps.GetGithubAllRepositoryAndBranches();
 
                 Console.WriteLine("Press any key to exit...");
                 Console.ReadKey();

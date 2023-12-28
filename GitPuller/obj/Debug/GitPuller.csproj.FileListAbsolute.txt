@@ -137,3 +137,8 @@ C:\Users\XYZ\source\repos\GitPuller-master\GitPuller\obj\Debug\GitPuller.csproj.
 C:\Users\XYZ\source\repos\GitPuller-master\GitPuller\obj\Debug\GitPuller.csproj.CopyComplete
 C:\Users\XYZ\source\repos\GitPuller-master\GitPuller\obj\Debug\GitPuller.exe
 C:\Users\XYZ\source\repos\GitPuller-master\GitPuller\obj\Debug\GitPuller.pdb
+C:\Users\XYZ\source\repos\GitPuller-master\GitPuller\obj\Debug\GitPuller.Form1.resources
+C:\Users\XYZ\source\repos\GitPuller-master\GitPuller\obj\Debug\GitPuller.csproj.GenerateResource.cache
+C:\Users\XYZ\source\repos\GitPuller-master\GitPuller\obj\Debug\GitPuller.Properties.Resources.resources
+C:\Users\XYZ\source\repos\GitPuller-master\GitPuller\bin\Debug\Newtonsoft.Json.dll
+C:\Users\XYZ\source\repos\GitPuller-master\GitPuller\bin\Debug\Newtonsoft.Json.xml
