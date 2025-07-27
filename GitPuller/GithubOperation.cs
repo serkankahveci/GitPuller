@@ -1,6 +1,9 @@
-﻿using System;
+using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.Extensions.Configuration;
@@ -11,12 +14,16 @@ namespace GitPuller
     public class GithubOperation
     {
         private readonly GitHubClient _github;
-        private string _branchName;
-        private string _repoName;
         private readonly ConfigurationManager _configManager;
         private readonly string _accessToken;
-        private string _path;
         private readonly Form1 _form;
+        
+        // Performance optimizations: Caching
+        private static readonly ConcurrentDictionary<long, IReadOnlyList<Branch>> _branchCache = new ConcurrentDictionary<long, IReadOnlyList<Branch>>();
+        private static readonly ConcurrentDictionary<string, IReadOnlyList<Repository>> _repositoryCache = new ConcurrentDictionary<string, IReadOnlyList<Repository>>();
+        
+        // Rate limiting and performance tracking
+        private readonly SemaphoreSlim _rateLimitSemaphore = new SemaphoreSlim(10, 10); // Limit concurrent API calls
 
         public GithubOperation(string accessToken, Form1 form)
         {
@@ -26,138 +33,183 @@ namespace GitPuller
 
             _github = new GitHubClient(new ProductHeaderValue("GitPuller"));
             _github.Credentials = new Credentials(accessToken);
+            
+            // Performance optimization: Configure HTTP client timeout
+            _github.SetRequestTimeout(TimeSpan.FromSeconds(30));
         }
 
         public async Task GetGithubAllRepositoryAndBranches()
         {
             try
             {
-                var repositories = await _github.Repository.GetAllForCurrent();
+                // Use cached repositories if available
+                var repositories = await GetCachedRepositories();
+                var repositoryPaths = _configManager.GetRepositoryPaths();
 
-                foreach (var repository in repositories)
+                // Parallel processing for better performance
+                var tasks = repositories.Select(async repository =>
                 {
-                    Console.WriteLine(repository.Name);
-                    _repoName = repository.Name;
-
-                    var branchList = await GetAllBranchesFromCurrentRepository(repository);
-                    foreach (var branch in branchList)
+                    await _rateLimitSemaphore.WaitAsync();
+                    try
                     {
-                        Console.WriteLine(branch.Name);
-                        _branchName = branch.Name;
-
-                        if (CheckRepo(_configManager.GetRepositoryPaths(), _repoName))
+                        var branchList = await GetAllBranchesFromCurrentRepository(repository);
+                        
+                        // Process branches in parallel
+                        var branchTasks = branchList.Select(async branch =>
                         {
-                            await ExecuteGitCommands(_path);
-                        }
-                        else
-                        {
-                            Console.WriteLine("Local repository not found. Skipping ExecuteGitCommands.");
-                        }
+                            if (CheckRepo(repositoryPaths, repository.Name, branch.Name, out string path))
+                            {
+                                await ExecuteGitCommands(path, branch.Name, repository.Name);
+                            }
+                        });
+                        
+                        await Task.WhenAll(branchTasks);
                     }
-                    Console.WriteLine("--------");
-                }
+                    finally
+                    {
+                        _rateLimitSemaphore.Release();
+                    }
+                });
 
-                await RepositoryAndBranchesToTreeView(); // Update treeView1
+                await Task.WhenAll(tasks);
+
+                // Update UI once at the end
+                await RepositoryAndBranchesToTreeView();
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error: {ex.Message}");
+                // Consider logging to file for production
             }
+        }
+
+        private async Task<IReadOnlyList<Repository>> GetCachedRepositories()
+        {
+            const string cacheKey = "current_user_repos";
+            
+            if (_repositoryCache.TryGetValue(cacheKey, out var cachedRepos))
+            {
+                return cachedRepos;
+            }
+
+            var repositories = await _github.Repository.GetAllForCurrent();
+            _repositoryCache.TryAdd(cacheKey, repositories);
+            return repositories;
         }
 
         public async Task<IReadOnlyList<Branch>> GetAllBranchesFromCurrentRepository(Repository repository)
         {
-            return await _github.Repository.Branch.GetAll(repository.Id);
+            // Use cache to avoid redundant API calls
+            if (_branchCache.TryGetValue(repository.Id, out var cachedBranches))
+            {
+                return cachedBranches;
+            }
+
+            var branches = await _github.Repository.Branch.GetAll(repository.Id);
+            _branchCache.TryAdd(repository.Id, branches);
+            return branches;
         }
 
-        public async Task ExecuteGitCommands(string path)
+        public async Task ExecuteGitCommands(string path, string branchName, string repoName)
         {
             try
             {
-                var repositoryPaths = _configManager.GetRepositoryPaths();
-
                 var exec = new CommandExecuter();
 
-                var changeDirectory = $"cd {path}";
-                exec.Execute(changeDirectory, path);
-
-                var gitStatusCommand = "git status --porcelain";
-                var statusResult = exec.Execute(gitStatusCommand, path);
-
-                if (!string.IsNullOrWhiteSpace(statusResult))
+                // Use optimized git operations
+                var result = await exec.PullRepository(path, branchName);
+                
+                if (result.Success)
                 {
-                    var gitStashSave = "git stash save -S 'New Save'";
-                    var stashSaveResult = exec.Execute(gitStashSave, path);
-                    Console.WriteLine(stashSaveResult);
+                    Console.WriteLine($"✓ Completed: {repoName}/{branchName}");
+                    if (!string.IsNullOrEmpty(result.PullOutput))
+                    {
+                        Console.WriteLine($"  Pull output: {result.PullOutput}");
+                    }
                 }
-
-                var gitPullCommand = $"git pull origin {_branchName}";
-                var pullResult = exec.Execute(gitPullCommand, path);
-                Console.WriteLine(pullResult);
-
-                if (!string.IsNullOrWhiteSpace(statusResult))
+                else
                 {
-                    var gitStashPop = "git stash pop stash@{0}";
-                    var stashPopResult = exec.Execute(gitStashPop, path);
-                    Console.WriteLine(stashPopResult);
+                    Console.WriteLine($"✗ Failed {repoName}/{branchName}: {result.ErrorMessage}");
                 }
-
-                // var gitStatusCommand = "git status";
-                // var statusResult = exec.Execute(gitStatusCommand, path);
-                // Console.WriteLine(statusResult);
-
-                Console.WriteLine($"Branch: {_branchName}");
-                Console.WriteLine($"Repository: {_repoName}");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error executing Git commands: {ex.Message}");
+                Console.WriteLine($"✗ Error executing Git commands for {repoName}/{branchName}: {ex.Message}");
             }
         }
 
-        public bool CheckRepo(List<string> repositoryPaths, string repoName)
+        public bool CheckRepo(List<string> repositoryPaths, string repoName, string branchName, out string foundPath)
         {
-            if (repositoryPaths != null && repositoryPaths.Count > 0)
+            foundPath = null;
+            
+            if (repositoryPaths?.Count > 0)
             {
-                foreach (var path in repositoryPaths)
+                // Optimize: Use LINQ for better performance and readability
+                foundPath = repositoryPaths.FirstOrDefault(path =>
                 {
                     var directoryName = new DirectoryInfo(path).Name;
-
-                    if (directoryName.Equals(repoName, StringComparison.OrdinalIgnoreCase) || directoryName.Equals($"{repoName}-{_branchName}", StringComparison.OrdinalIgnoreCase))
-                    {
-                        _path = path;
-                        return true;
-                    }
-                }
+                    return directoryName.Equals(repoName, StringComparison.OrdinalIgnoreCase) ||
+                           directoryName.Equals($"{repoName}-{branchName}", StringComparison.OrdinalIgnoreCase);
+                });
             }
-            return false;
+            
+            return foundPath != null;
         }
 
         public async Task RepositoryAndBranchesToTreeView()
         {
             try
             {
-                var repositories = await _github.Repository.GetAllForCurrent();
+                var repositories = await GetCachedRepositories();
 
-                foreach (var repository in repositories)
+                // Optimize UI updates by building tree structure first, then update UI once
+                var rootNodes = new List<TreeNode>();
+
+                var tasks = repositories.Select(async repository =>
                 {
-                    TreeNode repoNode = new TreeNode($"@{repository.Name}");
-
+                    var repoNode = new TreeNode($"@{repository.Name}");
                     var branchList = await GetAllBranchesFromCurrentRepository(repository);
+                    
                     foreach (var branch in branchList)
                     {
-                        TreeNode branchNode = new TreeNode($"@{branch.Name}");
+                        var branchNode = new TreeNode($"@{branch.Name}");
                         repoNode.Nodes.Add(branchNode);
                     }
+                    
+                    return repoNode;
+                });
 
-                    _form.UpdateTreeView(repoNode);
-                }
+                rootNodes.AddRange(await Task.WhenAll(tasks));
+
+                // Single UI update for better performance
+                await Task.Run(() =>
+                {
+                    _form.BeginInvoke(new Action(() =>
+                    {
+                        foreach (var node in rootNodes)
+                        {
+                            _form.UpdateTreeView(node);
+                        }
+                    }));
+                });
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error: {ex.Message}");
+                Console.WriteLine($"Error building tree view: {ex.Message}");
             }
         }
 
+        // Performance optimization: Clear cache when needed
+        public static void ClearCache()
+        {
+            _branchCache.Clear();
+            _repositoryCache.Clear();
+        }
+
+        // Resource cleanup
+        public void Dispose()
+        {
+            _rateLimitSemaphore?.Dispose();
+        }
     }
 }
