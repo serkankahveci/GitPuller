@@ -396,3 +396,31 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+# Configuration files with sensitive data
+appsettings.json
+appsettings.*.json
+
+# Application specific temp files
+*.tmp
+*.temp
+
+# Git merge artifacts
+*.orig
+*.rej
+
+# Additional IDE support
+.idea/
+*.DotSettings
+
+# OS specific
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# Application logs
+logs/
+*.log.*
+
+# Visual Studio 2015/2017 cache/options directory
+.vs/
